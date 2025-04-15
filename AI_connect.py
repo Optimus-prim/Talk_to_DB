@@ -5,48 +5,73 @@ from ollama import Client
 # MongoDB setup
 mongo_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 mongo_client = MongoClient(mongo_uri)
-db = mongo_client["your_db_name"]  # Replace with your DB
-collection = db["transactions"]
+db = mongo_client["Sample_Purchaces"]
+collection = db["User_sales"]
 
 # Ollama client (local LLM)
-ollama_client = Client(host='http://localhost:11434')  # default Ollama port
+ollama_client = Client(host='http://localhost:11434')
 
-# Example schema context
+# Schema context
 schema_hint = """
-You are working with the 'transactions' collection which has fields:
-- user_id (string)
-- transaction_date (ISODate)
-- amount (float)
+You are working with the 'User_sales' collection which has the following structure:
+
+- _id (string): Unique order ID (e.g., "ORD113")
+- customer (object):
+    - name (string): Customer full name
+    - email (string): Customer email address
+    - address (object):
+        - street (string): Street address
+        - city (string): City name
+- order_date (string): Date of the order in ISO format
+- total_price (float): Total amount of the order
+- items (array of objects): List of products in the order, each with:
+    - product_name (string)
+    - quantity (int)
+    - price (float)
+
+The collection is already defined as: collection = db["User_sales"]
+Use pymongo syntax. Return a single Python expression only (no print or for loops).
 """
 
-# Function to generate MongoDB query from NL
 def generate_mongo_query(user_question):
     full_prompt = f"""{schema_hint}
-Translate the following natural language request into a Python MongoDB query using the `collection` variable:
-The collection is already defined as: collection = db["transactions"]
-Only return the Python code using that variable.
+
+Translate the following natural language request into a valid **Python expression** using PyMongo and the variable `collection`.
+
+Very Important:
+- Only return a **single Python expression**.
+- Do NOT use print(), for-loops, or list comprehensions.
+- Do NOT include any explanations or markdown formatting.
+- The result should be directly assignable like: results = <expression>
+
+User input:
 "{user_question}"
-Only output the Python MongoDB query, no explanation.
 """
-    response = ollama_client.chat(model='mistral', messages=[{"role": "user", "content": full_prompt}])
+    response = ollama_client.chat(
+        model='mistral',
+        messages=[{"role": "user", "content": full_prompt}]
+    )
     return response['message']['content'].strip()
 
-# Run the generated MongoDB query
+
 def run_query(mongo_code_str):
     try:
-        # Clean up markdown artifacts like ```python and ```
-        clean_code = (
-            mongo_code_str.replace("```python", "")
-                          .replace("```", "")
-                          .strip()
-        )
-        exec(f"results = {clean_code}", globals())
-        return results
+        code = mongo_code_str.replace("```python", "").replace("```", "").strip()
+
+        # Force fallback for distinct error pattern
+        if "for" in code and "distinct" in code:
+            return collection.distinct("_id")
+
+        if code.startswith("for ") or "print(" in code:
+            exec(code)
+            return None
+        else:
+            exec(f"results = {code}", globals())
+            return results
     except Exception as e:
         return f"Error executing query: {str(e)}"
 
 
-# Main loop
 if __name__ == "__main__":
     user_question = input("Ask your MongoDB question: ")
     mongo_query_code = generate_mongo_query(user_question)
@@ -56,6 +81,8 @@ if __name__ == "__main__":
     result = run_query(mongo_query_code)
     if isinstance(result, str):
         print(result)
-    else:
+    elif result:
         for doc in result:
             print(doc)
+    else:
+        print("✅ Query ran, but no results were returned.")
