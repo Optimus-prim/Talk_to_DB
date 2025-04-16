@@ -15,7 +15,7 @@ ollama_client = Client(host='http://localhost:11434')
 schema_hint = """
 You are working with the 'User_sales' collection which has the following structure:
 
-- _id (string): Unique order ID (e.g., "ORD113")
+- _id (string): Unique order ID 
 - customer (object):
     - name (string): Customer full name
     - email (string): Customer email address
@@ -28,9 +28,6 @@ You are working with the 'User_sales' collection which has the following structu
     - product_name (string)
     - quantity (int)
     - price (float)
-
-The collection is already defined as: collection = db["User_sales"]
-Use pymongo syntax. Return a single Python expression only (no print or for loops).
 """
 
 def generate_mongo_query(user_question):
@@ -75,9 +72,9 @@ def run_query(mongo_code_str):
 if __name__ == "__main__":
     user_question = input("Ask your MongoDB question: ")
     mongo_query_code = generate_mongo_query(user_question)
-    print("\n🔎 Generated MongoDB Query:\n", mongo_query_code)
+    print("\n Generated MongoDB Query:\n", mongo_query_code)
 
-    print("\n📊 Running the query...\n")
+    print("\n Running the query...\n")
     result = run_query(mongo_query_code)
     if isinstance(result, str):
         print(result)
@@ -85,4 +82,4 @@ if __name__ == "__main__":
         for doc in result:
             print(doc)
     else:
-        print("✅ Query ran, but no results were returned.")
+        print(" Query ran, but no results were returned.")

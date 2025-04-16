@@ -8,7 +8,7 @@ def connect_mongo():
     return db['User_sales']  # Use your collection name
 
 def print_raw_data(collection, limit=10):
-    print(f"\n🔍 Showing first {limit} documents from MongoDB:\n")
+    print(f"\n Showing first {limit} documents from MongoDB:\n")
     for doc in collection.find().limit(limit):
         pprint(doc)
 
