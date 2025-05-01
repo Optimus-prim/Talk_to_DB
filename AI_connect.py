@@ -33,7 +33,7 @@ You are working with the 'User_sales' collection which has the following structu
 def generate_mongo_query(user_question):
     full_prompt = f"""{schema_hint}
 
-Translate the following natural language request into a valid **Python expression** using PyMongo and the variable `collection`.
+Translate the following natcreate gitural language request into a valid **Python expression** using PyMongo and the variable `collection`.
 
 Very Important:
 - Only return a **single Python expression**.
